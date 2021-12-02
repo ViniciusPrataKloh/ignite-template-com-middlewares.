@@ -31,7 +31,7 @@ function checksCreateTodosUserAvailability(request, response, next) {
     if (user.todos.length < 10) {
       return next();
     } else {
-      return response.status(403);
+      return response.status(403).json({ error: "Reached limit of todos!" });
     }
   }
 
@@ -39,47 +39,32 @@ function checksCreateTodosUserAvailability(request, response, next) {
 }
 
 function checksTodoExists(request, response, next) {
-  const { username, id } = request.params;
+  const { username } = request.headers;
+  const { id } = request.params;
 
   const user = users.find(
     (user) => user.username === username
   );
 
   if (!user) {
-    return response.status(404);
+    return response.status(404).json({ error: "User not found!" });
   }
 
-  const todo = user.todos.find(
-    (todo) => todo.id === id
-  );
+  if (validate(id)) {
+    const todo = user.todos.find(
+      (todo) => todo.id === id
+    );
 
-  if (!todo) {
-    return response.status(404);
+    if (!todo) {
+      return response.status(404).json({ error: "Todo not found!" });
+    }
+
+    request.user = user;
+    request.todo = todo;
+    return next();
+  } else {
+    return response.status(400).json({ error: "Id is not a uuid type!" })
   }
-
-  if (!validate(id)) {
-    return response.status(400);
-  }
-
-  // if (validate(id)) {
-  //   const todo = user.todos.find(
-  //     (todo) => todo.id === id
-  //   );
-
-  //   if (!todo) {
-  //     return response.status(404);
-  //   }
-
-  //   request.user = user;
-  //   request.todo = todo;
-  //   return next();
-
-  // }
-  // else {
-  //   return response.status(400);
-  // }
-
-  return response.status();
 }
 
 function findUserById(request, response, next) {
